@@ -33,14 +33,16 @@ async function selectInjection(evt) {
 </div>
 </div>`
 
-  document.body.addEventListener("click", async function (evt) {
-    var e = document.getElementById("flipp-container");
-    if (e) {
-      e.remove();
+  document.body.addEventListener("click", async function (e) {
+    e.stopPropagation();
+    e.preventDefault();
+    var container = document.getElementById("flipp-container");
+    if (container) {
+      container.remove();
     }
     console.dir(this);
-    console.log(evt.target);
-    evt.target.insertAdjacentHTML("afterEnd", html);
+    console.log(e.target);
+    e.target.insertAdjacentHTML("afterEnd", html);
   }, { once: true });
 }
 
