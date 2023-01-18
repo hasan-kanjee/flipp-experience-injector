@@ -3,21 +3,20 @@
   "name": "Flipp Experience Injector",
   "version": "1.0",
   "description": "Inject a Flipp experience onto a webpage under provided selector",
-  "permissions": [
-    "storage", "declarativeContent", "activeTab", "scripting"
-],
-"host_permissions": ["<all_urls>"],
-"content_scripts": [
-  {
-    "matches": ["http://*/*", "https://*/*"],
-      "js": ["js/inject.js", "popup.js"]
-  }
-],
-"web_accessible_resources": [{ 
-        "resources": ["css/*", "js/*", "popup.js"],
-        "matches": ["http://*/*", "https://*/*"]
-
-}],
+  "permissions": ["storage", "declarativeContent", "activeTab", "scripting"],
+  "host_permissions": ["<all_urls>"],
+  "content_scripts": [
+    {
+      "matches": ["http://*/*", "https://*/*"],
+      "js": ["js/inject.js"]
+    }
+  ],
+  "web_accessible_resources": [
+    {
+      "resources": ["css/*", "js/*", "popup.js"],
+      "matches": ["http://*/*", "https://*/*"]
+    }
+  ],
   "icons": {
     "16": "images/icon-16.png",
     "32": "images/icon-32.png",
@@ -29,5 +28,5 @@
   },
   "content_security_policy": {
     "extension_pages": "script-src 'self'; object-src 'self'; script-src-elem 'self' 'unsafe-inline' https://shopper.flipp.com/;"
-}
+  }
 }
