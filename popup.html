@@ -21,14 +21,15 @@
           <img src="images/flipp-logo-white.svg" alt="Flipp" width="58" height="58" class="map img-resonsive">experience
         </div>
       </div>
+      <form class="row g-3 needs-validation" id="flipp-injector-form">
       <div class="row second">
         <div class="col-sm">
           <label for="flippExtenstionSiteId" class="form-label">Site ID</label>
-          <input type="text" class="form-control" id="flippExtenstionSiteId" placeholder="Site ID" value="1192075">
+          <input type="text" class="form-control" id="flippExtenstionSiteId" placeholder="Site ID" value="1192075" required>
         </div>
         <div class="col-sm">
           <label for="flippExtenstionZoneIds" class="form-label">Zone IDs</label>
-          <input type="text" class="form-control" id="flippExtenstionZoneIds" placeholder="Zone IDs" value="260678">
+          <input type="text" class="form-control" id="flippExtenstionZoneIds" placeholder="Zone IDs" value="260678" required>
         </div>
       </div>
       <div class="row second">
@@ -84,9 +85,10 @@
       
       <div class="row second">
         <div class="col-sm"><button type="button" id="select" class="btn btn-primary">Select</button></div>
-        <div class="col-sm"><button type="button" id="inject" class="btn btn-primary">Inject</button></div>
+        <div class="col-sm"><button type="submit" id="inject" class="btn btn-primary">Inject</button></div>
         <div class="col-sm"><button type="button" id="clear" class="btn btn-secondary">Clear</button></div>
       </div>
+      </form>
     </div>
     <script src="js/alertify.min.js"></script>
     <script src="js/ace.js" type="text/javascript" charset="utf-8"></script>

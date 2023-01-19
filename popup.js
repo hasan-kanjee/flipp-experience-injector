@@ -19,7 +19,7 @@ async function addFlippExperience(siteId, zoneIds, loaderOptions) {
       [zoneIds],
       loaderOptions
     );
-  });
+  }); 
 
   let x = await fetch("https://cdn-gateflipp-stg.flippback.com/tag/js/flipptag.js");
   let y = await x.text();
@@ -90,6 +90,10 @@ function getPublisherLoaderOptions() {
 }
 
 async function addFlipp() {
+  var form = document.getElementById("flipp-injector-form");
+  if (!form.checkValidity()) {
+    return;
+  }
   const siteId = getSiteId();
   const zoneIds = getZoneIds();
   var loaderOptions = getPublisherLoaderOptions();
@@ -99,11 +103,13 @@ async function addFlipp() {
       ...loaderOptions,
       ...value,
     }
-    alertify.success('Parsed JSON successfully!'); 
+    if (!$.isEmptyObject(value)) {
+      alertify.success('Parsed JSON successfully!');
+    }
   } catch (e) {
     alertify.error('Ignoring JSON beacause failed to parse'); 
   }
-  const [{result}] = await chrome.scripting.executeScript({
+  const result = await chrome.scripting.executeScript({
     func: addFlippExperience,
     target: {
       tabId: (await chrome.tabs.query({active: true, currentWindow: true}))[0].id
@@ -162,3 +168,9 @@ document.body.onload = function(){
   editor.setTheme("ace/theme/textmate");
   editor.session.setMode("ace/mode/json");
 }
+
+var form = document.getElementById("flipp-injector-form");
+
+form.addEventListener("submit", (e) => {
+  e.preventDefault();
+})
