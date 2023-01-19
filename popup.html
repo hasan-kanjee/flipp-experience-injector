@@ -16,14 +16,36 @@
       </div>
       <div class="row second">
         <div class="input-group">
-          <input type="text" id="inlineFormInputGroupUsername2" class="form-control field" placeholder="Site ID">
-          <input type="text" id="inlineFormInputGroupUsername2" class="form-control field" placeholder="Zone IDs">
+          <label for="flippExtenstionSiteId">SiteId</label>
+          <input type="text" id="flippExtenstionSiteId" class="form-control field" placeholder="Site ID" value="1191862">
+        </div>
+        <div class="input-group">
+          <label for="flippExtenstionZoneIds">ZoneIds</label>
+          <input type="text" id="flippExtenstionZoneIds" class="form-control field" placeholder="Zone IDs" value="260678">
+        </div>
+      </div>
+      <div class="row second">
+        <div class="panel-group" id="accordion" role="tablist" aria-multiselectable="true">
+          <div class="panel panel-default">
+            <div class="panel-heading" role="tab" id="headingOne">
+              <h4 class="panel-title">
+                <a role="button" data-toggle="collapse" data-parent="#accordion" href="#collapseOne" aria-expanded="true" aria-controls="collapseOne">
+                  Publisher Loader Options
+                </a>
+              </h4>
+            </div>
+            <div id="collapseOne" class="panel-collapse collapse in" role="tabpanel" aria-labelledby="headingOne">
+              <div class="panel-body">
+                <textarea class="form-control" rows="3" id="flippExtenstionLoaderOptions" placeholder="Loader Options"></textarea>
+              </div>
+            </div>
           </div>
+        </div>
       </div>
       <div class="row second field">
-          <button type="button" id="select" class="btn btn-primary">Select</button>
-          <button type="button" id="inject" class="btn btn-primary">Inject</button>
-          <button type="button" id="clear" class="btn btn-secondary">Clear</button>
+        <button type="button" id="select" class="btn btn-primary">Select</button>
+        <button type="button" id="inject" class="btn btn-primary">Inject</button>
+        <button type="button" id="clear" class="btn btn-secondary">Clear</button>
       </div>
     </div>
     <script src="./popup.js" type="module"></script>
