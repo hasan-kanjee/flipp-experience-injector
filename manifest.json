@@ -5,12 +5,6 @@
   "description": "Inject a Flipp experience onto a webpage under provided selector",
   "permissions": ["storage", "declarativeContent", "activeTab", "scripting"],
   "host_permissions": ["<all_urls>"],
-  "content_scripts": [
-    {
-      "matches": ["http://*/*", "https://*/*"],
-      "js": ["js/inject.js"]
-    }
-  ],
   "web_accessible_resources": [
     {
       "resources": ["css/*", "js/*", "popup.js"],

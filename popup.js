@@ -3,11 +3,7 @@ function clearFlippExperience() {
   placeholder.innerHTML = "";
 }
 
-async function addFlippExperience(siteId, zoneIds, options) {
-  const loaderOptions = {
-    dwellExpandable: true,
-    ...options
-  };
+async function addFlippExperience(siteId, zoneIds, loaderOptions) {
   console.log(loaderOptions);
   const placeholder = document.getElementById("flipp-scroll-ad-content");
   placeholder.innerHTML = "";
@@ -17,13 +13,13 @@ async function addFlippExperience(siteId, zoneIds, options) {
     window.flippxp.registerSlot(
       '#flipp-scroll-ad-content',
       'wishabi-test-publisher',
-      1191862,
-      [260678],
+      siteId,
+      [zoneIds],
       loaderOptions
     );
   });
 
-  let x = await fetch("https://shopper.flipp.com/tag/js/flipptag.js");
+  let x = await fetch("https://cdn-gateflipp-stg.flippback.com/tag/js/flipptag.js");
   let y = await x.text();
   setTimeout(y, 1);
 }
@@ -62,15 +58,21 @@ function getZoneIds() {
 }
 
 function getPublisherLoaderOptions() {
-  const loaderOptions = document.getElementById("flippExtenstionLoaderOptions");
-  const textValue = loaderOptions.value.trim();
-  if (textValue.length !== 0) {
-    try {
-      const value = JSON.parse(textValue);
-      return value;
-    } catch (e) {}
+  const loaderOptions = {
+    dwellExpandable: false,
+    nestedIframe: false,
+    expandOnReadmore: false
+  };
+  if ($('#dwellExpandable:checked').val()) {
+    loaderOptions.dwellExpandable = true
   }
-  return {};
+  if ($('#nestedIframe:checked').val()) {
+    loaderOptions.nestedIframe = true
+  }
+  if ($('#expandOnReadmore:checked').val()) {
+    loaderOptions.expandOnReadmore = true
+  }
+  return loaderOptions;
 }
 
 async function addFlipp() {

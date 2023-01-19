@@ -1,6 +1,6 @@
 body {
   background-color: #43c4f4 !important;
-  width: 40em;
+  width: 50em;
 }
 
 .header {
@@ -11,6 +11,7 @@ body {
 
 .second {
   padding-left: 20px;
+  padding-bottom: 20px;
 }
 
 .field {
