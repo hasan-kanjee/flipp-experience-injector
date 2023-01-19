@@ -6,6 +6,13 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <link rel="stylesheet" href="./popup.css" />
     <link rel="stylesheet" href="./bootstrap.min.css" />
+    <link rel="stylesheet" href="./alertify.rtl.min.css">
+    <link rel="stylesheet" href="./default.rtl.min.css">
+    <style type="text/css" media="screen">
+      #editor { 
+        height: 150px;
+      }
+  </style>
   </head>
   <body>
     <div class="container">
@@ -15,11 +22,11 @@
         </div>
       </div>
       <div class="row second">
-        <div class="mb-3">
+        <div class="col-sm">
           <label for="flippExtenstionSiteId" class="form-label">Site ID</label>
           <input type="text" class="form-control" id="flippExtenstionSiteId" placeholder="Site ID" value="1192075">
         </div>
-        <div class="mb-3">
+        <div class="col-sm">
           <label for="flippExtenstionZoneIds" class="form-label">Zone IDs</label>
           <input type="text" class="form-control" id="flippExtenstionZoneIds" placeholder="Zone IDs" value="260678">
         </div>
@@ -48,11 +55,41 @@
             </div>
       </div>
       <div class="row second">
+        <div class="col-sm">
+        <div class="form-check form-switch">
+          
+          <input class="form-check-input" type="checkbox" id="preview">
+          <label class="form-check-label" for="preview">Preview</label>
+          </div>
+        </div>
+        <div class="col-sm">
+          <div class="form-check form-switch">
+            
+            <input class="form-check-input" type="checkbox" id="startCompact">
+            <label class="form-check-label" for="startCompact">Start Compact</label>
+            </div>
+          </div>
+          <div class="col-sm">
+            <div class="form-check form-switch">
+              
+              <input class="form-check-input" type="checkbox" id="isGoogleAmp">
+              <label class="form-check-label" for="dwellExpandable">Google Amp</label>
+              </div>
+            </div>
+      </div>
+      <div class="row second">
+        <label class="form-check-label" for="editor">Loader Options</label>
+      <div id="editor">{}</div>
+    </div>
+      
+      <div class="row second">
         <div class="col-sm"><button type="button" id="select" class="btn btn-primary">Select</button></div>
         <div class="col-sm"><button type="button" id="inject" class="btn btn-primary">Inject</button></div>
         <div class="col-sm"><button type="button" id="clear" class="btn btn-secondary">Clear</button></div>
       </div>
     </div>
+    <script src="js/alertify.min.js"></script>
+    <script src="js/ace.js" type="text/javascript" charset="utf-8"></script>
     <script src="./popup.js" type="module"></script>
     <script src="js/jquery-3.6.3.min.js"></script>
     <script src="js/bootstrap.min.js"></script>

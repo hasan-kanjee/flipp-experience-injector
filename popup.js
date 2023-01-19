@@ -1,3 +1,5 @@
+var editor = ace.edit("editor");
+
 function clearFlippExperience() {
   const placeholder = document.getElementById("flipp-scroll-ad-content");
   placeholder.innerHTML = "";
@@ -61,7 +63,10 @@ function getPublisherLoaderOptions() {
   const loaderOptions = {
     dwellExpandable: false,
     nestedIframe: false,
-    expandOnReadmore: false
+    expandOnReadmore: false,
+    preview: false,
+    startCompact: false,
+    isGoogleAmp: false
   };
   if ($('#dwellExpandable:checked').val()) {
     loaderOptions.dwellExpandable = true
@@ -72,13 +77,32 @@ function getPublisherLoaderOptions() {
   if ($('#expandOnReadmore:checked').val()) {
     loaderOptions.expandOnReadmore = true
   }
+  if ($('#preview:checked').val()) {
+    loaderOptions.preview = true
+  }
+  if ($('#startCompact:checked').val()) {
+    loaderOptions.startCompact = true
+  }
+  if ($('#isGoogleAmp:checked').val()) {
+    loaderOptions.isGoogleAmp = true
+  }
   return loaderOptions;
 }
 
 async function addFlipp() {
   const siteId = getSiteId();
   const zoneIds = getZoneIds();
-  const loaderOptions = getPublisherLoaderOptions();
+  var loaderOptions = getPublisherLoaderOptions();
+  try {
+    var value = JSON.parse(editor.getSession().getValue().replace(/\r?\n|\r/g, ''));
+    loaderOptions = {
+      ...loaderOptions,
+      ...value,
+    }
+    alertify.success('Parsed JSON successfully!'); 
+  } catch (e) {
+    alertify.error('Ignoring JSON beacause failed to parse'); 
+  }
   const [{result}] = await chrome.scripting.executeScript({
     func: addFlippExperience,
     target: {
@@ -133,3 +157,8 @@ select.addEventListener("click", async (event) => {
     await selectFlipp();
   })();
 });
+
+document.body.onload = function(){
+  editor.setTheme("ace/theme/textmate");
+  editor.session.setMode("ace/mode/json");
+}

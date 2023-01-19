@@ -17,3 +17,9 @@ body {
 .field {
   margin-bottom: 10px !important;
 }
+
+.alertify-notifier {
+  top: 80%;
+  left: 30% !important;
+  margin: auto;
+}
