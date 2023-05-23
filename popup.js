@@ -21,7 +21,7 @@ async function addFlippExperience(siteId, zoneIds, loaderOptions) {
     );
   }); 
 
-  let x = await fetch("https://cdn-gateflipp-stg.flippback.com/tag/js/flipptag.js");
+  let x = await fetch("https://cdn-gateflipp.flippback.com/tag/js/flipptag.js");
   let y = await x.text();
   setTimeout(y, 1);
 }
