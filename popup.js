@@ -1,19 +1,22 @@
 var editor = ace.edit("editor");
 
 function clearFlippExperience() {
-  const placeholder = document.getElementById("flipp-scroll-ad-content");
-  placeholder.innerHTML = "";
+  var flippElements = document.getElementsByClassName('flipp-element');
+  while(flippElements[0]) {
+    flippElements[0].parentNode.removeChild(flippElements[0]);
+  }
 }
 
 async function addFlippExperience(siteId, zoneIds, loaderOptions) {
   console.log(loaderOptions);
-  const placeholder = document.getElementById("flipp-scroll-ad-content");
+  flippElementCount = document.getElementsByClassName('flipp-element').length
+  const placeholder = document.getElementById(`flipp-scroll-ad-content-${flippElementCount}`);
   placeholder.innerHTML = "";
 
   window.flippxp = window.flippxp || { run: [] };
   window.flippxp.run.push(function () {
     window.flippxp.registerSlot(
-      '#flipp-scroll-ad-content',
+      `#flipp-scroll-ad-content-${flippElementCount}`,
       'wishabi-test-publisher',
       siteId,
       [zoneIds],
@@ -28,21 +31,19 @@ async function addFlippExperience(siteId, zoneIds, loaderOptions) {
 
 
 function selectInjection(evt) {
-  var html = `<div class="iframe-container" id="flipp-container">
-<div id="flipp-scroll-ad-content">
+  flippElementCount = document.getElementsByClassName('flipp-element').length
+  var html = `<div class="iframe-container flipp-element" id="flipp-container-${flippElementCount+1}">
+<div id="flipp-scroll-ad-content-${flippElementCount+1}">
   <div style="font-size: 20px; background-color: green; height: 100px;">
     WILL BE INJECTED HERE!
   </div>
 </div>
 </div>`
-
+  
   document.body.addEventListener("click", async function (e) {
     e.stopPropagation();
     e.preventDefault();
-    var container = document.getElementById("flipp-container");
-    if (container) {
-      container.remove();
-    }
+
     console.dir(this);
     console.log(e.target);
     e.target.insertAdjacentHTML("afterEnd", html);
@@ -141,6 +142,10 @@ async function selectFlipp() {
     world: 'MAIN',
   });
   return result;
+}
+
+async function buildFlippContainerHTML() {
+
 }
 
 const inject = document.getElementById("inject");
