@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Flipp Experience Injector",
-  "version": "1.0",
+  "version": "1.2",
   "description": "Inject a Flipp experience onto a webpage under provided selector",
   "permissions": ["storage", "declarativeContent", "activeTab", "scripting"],
   "host_permissions": ["<all_urls>"],

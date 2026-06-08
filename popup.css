@@ -10,6 +10,18 @@ body {
   margin-bottom: 10px;
 }
 
+.injector-version {
+  font-style: normal;
+  font-size: 12px;
+  font-weight: bold;
+  vertical-align: middle;
+  margin-left: 8px;
+  padding: 2px 8px;
+  border-radius: 10px;
+  background-color: rgba(0, 0, 0, 0.25);
+  color: white;
+}
+
 .second {
   padding-left: 20px;
   padding-bottom: 20px;

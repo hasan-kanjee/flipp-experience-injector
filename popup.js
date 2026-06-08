@@ -32,7 +32,7 @@ async function addFlippExperience(siteId, zoneIds, loaderOptions) {
 
 function selectInjection(evt) {
   flippElementCount = document.getElementsByClassName('flipp-element').length
-  var html = `<div class="iframe-container flipp-element" id="flipp-container-${flippElementCount+1}">
+  var html = `<div class="flipp-injector-container flipp-element" id="flipp-container-${flippElementCount+1}" style="position:relative; display:block; width:100%; height:auto; clear:both; float:none; margin:0;">
 <div id="flipp-scroll-ad-content-${flippElementCount+1}">
   <div style="font-size: 20px; background-color: green; height: 100px;">
     WILL BE INJECTED HERE!
@@ -169,9 +169,52 @@ select.addEventListener("click", async (event) => {
   })();
 });
 
+// Persist the form across popup close/reopen. The popup reloads from disk every
+// time it's opened, so without this the inputs reset to their HTML defaults.
+const FORM_STORAGE_KEY = "flippInjectorFormState";
+const TEXT_INPUT_IDS = ["flippExtenstionSiteId", "flippExtenstionZoneIds"];
+const CHECKBOX_IDS = ["nestedIframe", "expandOnReadmore", "dwellExpandable", "preview", "startCompact", "isGoogleAmp"];
+
+function saveFormState() {
+  const state = { editor: editor.getSession().getValue() };
+  TEXT_INPUT_IDS.forEach((id) => { state[id] = document.getElementById(id).value; });
+  CHECKBOX_IDS.forEach((id) => { state[id] = document.getElementById(id).checked; });
+  chrome.storage.local.set({ [FORM_STORAGE_KEY]: state });
+}
+
+function restoreFormState() {
+  chrome.storage.local.get(FORM_STORAGE_KEY, (result) => {
+    const state = result[FORM_STORAGE_KEY];
+    if (!state) return;
+    TEXT_INPUT_IDS.forEach((id) => {
+      if (state[id] !== undefined) document.getElementById(id).value = state[id];
+    });
+    CHECKBOX_IDS.forEach((id) => {
+      if (state[id] !== undefined) document.getElementById(id).checked = state[id];
+    });
+    if (state.editor !== undefined) editor.setValue(state.editor, -1);
+  });
+}
+
+function wireFormPersistence() {
+  TEXT_INPUT_IDS.forEach((id) => {
+    document.getElementById(id).addEventListener("input", saveFormState);
+  });
+  CHECKBOX_IDS.forEach((id) => {
+    document.getElementById(id).addEventListener("change", saveFormState);
+  });
+  editor.getSession().on("change", saveFormState);
+  restoreFormState();
+}
+
 document.body.onload = function(){
   editor.setTheme("ace/theme/textmate");
   editor.session.setMode("ace/mode/json");
+  const versionEl = document.getElementById("flippInjectorVersion");
+  if (versionEl) {
+    versionEl.textContent = `v${chrome.runtime.getManifest().version}`;
+  }
+  wireFormPersistence();
 }
 
 var form = document.getElementById("flipp-injector-form");
