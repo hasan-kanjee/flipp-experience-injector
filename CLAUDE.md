@@ -17,7 +17,7 @@ The popup ([popup.html](popup.html)) has two switches up front:
 
 Flow: **Select** runs `toggleSelecting` (one select session per page, kept on `window.__flippInjector`; pressing again or Esc cancels). The clicked element gets a placeholder `<div class="flipp-element" data-flipp-injector="pending">` with a unique id right after it, replacing any older pending one. **Inject** renders into the pending placeholder and marks it `injected`, so multiple experiences work. **Clear all** removes them. The popup reads `getInjectorState` to highlight the next step.
 
-Activity log: popup events go to `chrome.storage.session` `flippInjectorLog`. [background.js](background.js) watches page requests with `webRequest` (FLS routes, flipptag, `adzerk.net` and `inv-nets.admixer.net` trackers, Flipp beacons) and writes `flippInjectorNetLog`. The popup merges both live.
+Activity log: popup events go to `chrome.storage.session` `flippInjectorLog`. [background.js](background.js) watches page requests with `webRequest` (FLS routes, flipptag, `adzerk.net` and `inv-nets.admixer.net` trackers, Flipp beacons) and writes `flippInjectorNetLog`. The popup merges both live. Entries with `net::ERR_BLOCKED_BY_CLIENT` become `blocked` and drive the ad blocker alert (`updateAdblockAlert`) and the in-page notice (`showBlockedNotice`).
 
 Result panel: badge "AdMixer" when `decision.demand.dspName` is set, else "Kevel"; ids, `uapIds`, "No bid", HTTP errors, raw response.
 

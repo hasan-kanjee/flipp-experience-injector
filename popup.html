@@ -19,6 +19,20 @@
     </header>
 
     <form id="flipp-injector-form" class="fx-main">
+      <div class="fx-alert" id="adblockAlert" role="alert" hidden>
+        <span class="fx-alert-icon" aria-hidden="true">!</span>
+        <div>
+          <strong id="adblockTitle">An ad blocker is stopping the Flipp experience</strong>
+          <p id="adblockText"></p>
+          <ol>
+            <li>Turn off your ad blocker for this site. Click its icon in the browser toolbar (for example uBlock Origin, AdBlock, or Brave Shields).</li>
+            <li>Reload the page.</li>
+            <li>Press Select, then Inject again.</li>
+          </ol>
+        </div>
+        <button type="button" class="btn-close" id="adblockDismiss" aria-label="Dismiss"></button>
+      </div>
+
       <div class="fx-switches">
         <div>
           <div class="fx-label">Environment</div>

@@ -195,6 +195,64 @@ code {
   box-shadow: 0 0 0 0.2rem rgba(67, 196, 244, 0.25);
 }
 
+/* Ad blocker alert */
+.fx-alert {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 10px 12px;
+  border: 1px solid #f1b0b0;
+  border-left: 4px solid var(--fx-red);
+  border-radius: 8px;
+  background: #fff1f1;
+}
+
+.fx-alert-icon {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: var(--fx-red);
+  color: #fff;
+  font-weight: 700;
+}
+
+.fx-alert strong {
+  display: block;
+  color: #8a1f1f;
+  font-size: 14px;
+}
+
+.fx-alert p {
+  margin: 2px 0 4px;
+  font-size: 12px;
+}
+
+.fx-alert ol {
+  margin: 0;
+  padding-left: 18px;
+  font-size: 12px;
+}
+
+.fx-alert .btn-close {
+  flex: none;
+  margin-left: auto;
+  font-size: 10px;
+}
+
+.fx-log-blocked .fx-log-tag {
+  background: var(--fx-red);
+  color: #fff;
+}
+
+.fx-log-blocked .fx-log-text {
+  color: #8a1f1f;
+  font-weight: 600;
+}
+
 /* Environment and mode */
 .fx-switches {
   display: flex;

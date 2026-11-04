@@ -43,13 +43,18 @@ function record(details, outcome) {
   if (details.tabId < 0) return;
   const match = classify(details.url);
   if (!match) return;
+  const blocked = outcome.error === "net::ERR_BLOCKED_BY_CLIENT";
   const failed = outcome.error || outcome.status >= 400;
   const url = new URL(details.url);
+  const where = `${details.method} ${url.host}${url.pathname}`;
   queue.push({
     t: Date.now(),
-    kind: failed ? "failed" : match.kind,
+    tabId: details.tabId,
+    kind: blocked ? "blocked" : failed ? "failed" : match.kind,
+    // flipptag and FLS are needed for the experience to show at all
+    core: match.kind === "fls" || match.kind === "tag-load",
     label: match.label,
-    text: `${outcome.error || outcome.status} ${details.method} ${url.host}${url.pathname}`,
+    text: blocked ? `Blocked by an ad blocker: ${where}` : `${outcome.error || outcome.status} ${where}`,
     detail: JSON.stringify({ url: details.url, type: details.type, tabId: details.tabId, ...outcome }, null, 2),
   });
   writing = writing.then(flush);

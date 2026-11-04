@@ -131,9 +131,20 @@ function clearFlippExperience() {
 async function addFlippExperience(siteId, zoneIds, loaderOptions, tagUrl) {
   const container = document.querySelector('.flipp-element[data-flipp-injector="pending"]');
   if (!container) return false;
+
+  // Load the tag first so a blocked request leaves the spot pending
+  let tag;
+  try {
+    tag = await (await fetch(tagUrl)).text();
+  } catch (e) {
+    return 'fetch-failed';
+  }
+
   const slot = container.firstElementChild;
   slot.innerHTML = "";
   container.setAttribute('data-flipp-injector', 'injected');
+  document.querySelectorAll('[data-flipp-injector-last]').forEach((n) => n.removeAttribute('data-flipp-injector-last'));
+  container.setAttribute('data-flipp-injector-last', '');
 
   window.flippxp = window.flippxp || { run: [] };
   window.flippxp.run.push(function () {
@@ -146,9 +157,21 @@ async function addFlippExperience(siteId, zoneIds, loaderOptions, tagUrl) {
     );
   });
 
-  let x = await fetch(tagUrl);
-  let y = await x.text();
-  setTimeout(y, 1);
+  setTimeout(tag, 1);
+  return true;
+}
+
+// Replaces the latest slot with a plain-language notice when an ad blocker stops it
+function showBlockedNotice() {
+  const container = document.querySelector('.flipp-element[data-flipp-injector="pending"]') ||
+    document.querySelector('.flipp-element[data-flipp-injector-last]');
+  if (!container || container.getAttribute('data-flipp-injector') === 'blocked') return false;
+  container.setAttribute('data-flipp-injector', 'blocked');
+  container.firstElementChild.innerHTML = `<div style="box-sizing:border-box;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;min-height:120px;padding:16px;border:2px solid #f0b429;border-radius:12px;background:#fff7e6;color:#7a4a00;font:600 16px/1.35 -apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;text-align:center;letter-spacing:normal;text-transform:none;">
+<span style="display:inline-block;padding:2px 10px;border-radius:999px;background:#43c4f4;color:#fff;font-size:11px;font-weight:700;letter-spacing:.08em;">FLIPP</span>
+<span>An ad blocker is blocking this Flipp experience</span>
+<span style="font-weight:400;font-size:13px;">Turn off your ad blocker for this site, reload the page, then Select and Inject again.</span>
+</div>`;
   return true;
 }
 
@@ -159,6 +182,8 @@ function renderBiddingCreative(creative, height) {
   const slot = container.firstElementChild;
   slot.innerHTML = "";
   container.setAttribute('data-flipp-injector', 'injected');
+  document.querySelectorAll('[data-flipp-injector-last]').forEach((n) => n.removeAttribute('data-flipp-injector-last'));
+  container.setAttribute('data-flipp-injector-last', '');
 
   const iframe = document.createElement('iframe');
   iframe.className = 'flippxp-frame-container';
@@ -347,6 +372,12 @@ async function injectTag(envKey) {
   const options = buildLoaderOptions("tag");
   log("tag", `Loading flipptag (${env.label})`, { tagUrl: env.tagUrl, siteId: getSiteId(), zoneIds: getZoneIds(), loaderOptions: options });
   const ok = await runInPage(addFlippExperience, [getSiteId(), getZoneIds(), options, env.tagUrl]);
+  if (ok === "fetch-failed") {
+    // background.js logs the exact reason, which drives the ad blocker alert
+    log("error", "The page could not load flipptag. An ad blocker is the usual cause.");
+    showResult({ kind: "error", env: envKey, via: "flipptag", message: "flipptag could not load on this page. An ad blocker is the usual cause." });
+    return;
+  }
   if (!ok) {
     log("error", NO_PLACEHOLDER);
     alertify.error(NO_PLACEHOLDER);
@@ -606,7 +637,7 @@ function renderResult(result) {
     meta.push("flipptag");
     message = "flipptag loaded on the page. It fetches the campaign from /campaigns itself. Watch Activity for the call.";
   } else {
-    meta.push("/client_bidding");
+    meta.push(result.via || "/client_bidding");
     if (result.status) meta.push(`HTTP ${result.status}`);
     if (result.kind === "loading") {
       badge = el("span", "fx-badge", "Requesting");
@@ -690,6 +721,7 @@ async function renderLog() {
   const stored = await chrome.storage.session.get([LOG_STORAGE_KEY, NET_LOG_STORAGE_KEY]);
   const entries = [...(stored[LOG_STORAGE_KEY] || []), ...(stored[NET_LOG_STORAGE_KEY] || [])]
     .sort((a, b) => b.t - a.t);
+  updateAdblockAlert(entries);
   const list = byId("activityList");
   list.replaceChildren();
   byId("activityCount").textContent = entries.length ? String(entries.length) : "";
@@ -714,6 +746,46 @@ async function renderLog() {
     }
     list.append(item);
   });
+}
+
+// ---- Ad blocker alert
+// Shown when the active tab has blocked requests newer than its last good
+// flipptag / FLS load (so it goes away once the blocker is off and the page reloads).
+
+const ADBLOCK_DISMISSED_KEY = "flippInjectorAdblockDismissedAt";
+const ADBLOCK_NOTICE_KEY = "flippInjectorAdblockNoticeAt";
+let activeTabId = null;
+
+async function updateAdblockAlert(entries) {
+  const stored = await chrome.storage.session.get([ADBLOCK_DISMISSED_KEY, ADBLOCK_NOTICE_KEY]);
+  const forTab = entries.filter((e) => e.tabId !== undefined && e.tabId === activeTabId);
+  const lastGood = Math.max(0, ...forTab.filter((e) => e.core && e.kind !== "blocked" && e.kind !== "failed").map((e) => e.t));
+  const blocked = forTab.filter((e) => e.kind === "blocked" && e.t > lastGood);
+  const visible = blocked.filter((e) => e.t > (stored[ADBLOCK_DISMISSED_KEY] || 0));
+  const core = blocked.filter((e) => e.core);
+
+  byId("adblockAlert").hidden = !visible.length;
+  if (visible.length) {
+    const experienceBlocked = visible.some((e) => e.core);
+    byId("adblockTitle").textContent = experienceBlocked
+      ? "An ad blocker is stopping the Flipp experience"
+      : "An ad blocker is blocking Flipp tracking";
+    byId("adblockText").textContent = experienceBlocked
+      ? "The experience can't load on this page while the ad blocker is on."
+      : "The experience may show, but impressions and clicks won't be counted.";
+  }
+
+  // Also tell whoever is looking at the page, once per blocked load
+  const newest = core.length ? Math.max(...core.map((e) => e.t)) : 0;
+  if (newest > (stored[ADBLOCK_NOTICE_KEY] || 0)) {
+    await chrome.storage.session.set({ [ADBLOCK_NOTICE_KEY]: newest });
+    try {
+      await runInPage(showBlockedNotice);
+      refreshSteps();
+    } catch (e) {
+      // Page can't be scripted
+    }
+  }
 }
 
 async function clearLog() {
@@ -818,18 +890,23 @@ function wireForm() {
     alertify.success("New user key");
   });
   byId("clearLog").addEventListener("click", clearLog);
+  byId("adblockDismiss").addEventListener("click", async () => {
+    byId("adblockAlert").hidden = true;
+    await chrome.storage.session.set({ [ADBLOCK_DISMISSED_KEY]: Date.now() });
+  });
   chrome.storage.onChanged.addListener((changes, area) => {
     if (area === "session" && (changes[LOG_STORAGE_KEY] || changes[NET_LOG_STORAGE_KEY])) renderLog();
   });
   byId("flipp-injector-form").addEventListener("submit", (e) => e.preventDefault());
 }
 
-document.body.onload = function () {
+document.body.onload = async function () {
   editor.setTheme("ace/theme/textmate");
   editor.session.setMode("ace/mode/json");
   byId("flippInjectorVersion").textContent = `v${chrome.runtime.getManifest().version}`;
   wireForm();
   restoreFormState();
   refreshSteps();
+  activeTabId = (await getActiveTab())?.id ?? null;
   renderLog();
 };

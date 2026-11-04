@@ -13,6 +13,7 @@ A Chrome extension (Manifest V3) for **demoing a Flipp experience directly on a 
 - **Result panel**: source badge (Kevel or AdMixer), campaign / flight / ad / creative ids, UAP ids when present, "No bid", HTTP errors, and the raw response.
 - Campaign fields: **Site ID**, **Zone IDs**, **Content code**.
 - **Activity log**: popup requests and responses, plus page requests seen by the background worker: FLS calls, flipptag loads, Kevel and AdMixer impression / viewability / click trackers, and Flipp beacons. Click a row for details.
+- **Ad blocker alert**: when an ad blocker blocks flipptag, FLS or trackers, the popup and the page slot explain how to turn it off.
 - Loader toggles (including Disable Lazy Load, Fixed Height Unit, Mobile Swipe) plus a collapsible **Advanced** JSON editor merged over them.
 - **Staging header overrides** (bidding mode only): `X-LD-Flags` and `X-LD-Authorization`. Never sent to production.
 - **New user key** (bidding mode, under Advanced) to get past Kevel frequency caps.
