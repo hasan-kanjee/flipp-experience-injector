@@ -324,6 +324,154 @@ code {
   background: #fff;
 }
 
+/* Select mode is on: pulse until a spot is picked */
+.fx-step-selecting {
+  border-color: var(--fx-amber);
+  background: var(--fx-amber);
+  animation: fx-pulse 1.4s ease-in-out infinite;
+}
+
+.fx-step-selecting,
+.fx-step-selecting small {
+  color: #fff;
+}
+
+.fx-step-selecting .fx-step-num {
+  background: #fff;
+  color: var(--fx-amber);
+}
+
+@keyframes fx-pulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(199, 124, 0, 0.45); }
+  50% { box-shadow: 0 0 0 6px rgba(199, 124, 0, 0); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .fx-step-selecting {
+    animation: none;
+  }
+}
+
+.fx-user-key {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 6px;
+}
+
+/* Activity log */
+.fx-activity-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 6px;
+}
+
+.fx-pill:empty {
+  display: none;
+}
+
+.fx-log {
+  max-height: 220px;
+  margin: 0;
+  padding: 0;
+  overflow: auto;
+  list-style: none;
+  font-size: 12px;
+}
+
+.fx-log-item {
+  border-top: 1px solid var(--fx-border);
+}
+
+.fx-log-item:first-child {
+  border-top: none;
+}
+
+.fx-log-row {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  padding: 4px 0;
+}
+
+summary.fx-log-row {
+  cursor: pointer;
+  list-style: none;
+}
+
+summary.fx-log-row::-webkit-details-marker {
+  display: none;
+}
+
+summary.fx-log-row .fx-log-text::after {
+  content: " ▸";
+  color: var(--fx-muted);
+}
+
+details[open] > summary.fx-log-row .fx-log-text::after {
+  content: " ▾";
+}
+
+.fx-log-time {
+  flex: none;
+  color: var(--fx-muted);
+  font-family: var(--bs-font-monospace);
+  font-size: 11px;
+}
+
+.fx-log-tag {
+  flex: none;
+  min-width: 92px;
+  padding: 0 6px;
+  border-radius: 4px;
+  background: var(--fx-bg);
+  color: var(--fx-muted);
+  font-size: 11px;
+  font-weight: 700;
+  text-align: center;
+}
+
+.fx-log-text {
+  word-break: break-word;
+}
+
+.fx-log-request .fx-log-tag,
+.fx-log-response .fx-log-tag,
+.fx-log-fls .fx-log-tag,
+.fx-log-tag-load .fx-log-tag {
+  background: var(--fx-blue-soft);
+  color: var(--fx-blue-strong);
+}
+
+.fx-log-kevel .fx-log-tag {
+  background: var(--fx-blue-strong);
+  color: #fff;
+}
+
+.fx-log-admixer .fx-log-tag {
+  background: var(--fx-purple);
+  color: #fff;
+}
+
+.fx-log-error .fx-log-tag,
+.fx-log-failed .fx-log-tag {
+  background: var(--fx-red);
+  color: #fff;
+}
+
+.fx-log pre {
+  max-height: 200px;
+  margin: 0 0 6px;
+  padding: 6px 8px;
+  overflow: auto;
+  border-radius: 6px;
+  background: var(--fx-bg);
+  font-size: 11px;
+  white-space: pre-wrap;
+  word-break: break-all;
+}
+
 /* Result */
 .fx-result-head {
   display: flex;

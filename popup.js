@@ -27,27 +27,118 @@ const CREATIVE_TYPE = "NativeX";
 // Same defaults as the Prebid flippBidAdapter
 const COMPACT_DEFAULT_HEIGHT = 600;
 const STANDARD_DEFAULT_HEIGHT = 1800;
-const NO_PLACEHOLDER = "No placeholder on the page. Click Select, then click a spot on the page.";
+const NO_PLACEHOLDER = "No spot selected on the page. Press Select, then click a spot on the page.";
 
 // ---- Injected into the page (MAIN world). These only see their args.
 
-function clearFlippExperience() {
-  var flippElements = document.getElementsByClassName('flipp-element');
-  while(flippElements[0]) {
-    flippElements[0].parentNode.removeChild(flippElements[0]);
+// Starts select mode, or cancels it if it is already on. Returns true when started.
+function toggleSelecting() {
+  const state = (window.__flippInjector = window.__flippInjector || { seq: 0 });
+  if (state.stopSelecting) {
+    state.stopSelecting();
+    return false;
   }
+
+  const banner = document.createElement('div');
+  banner.setAttribute('data-flipp-injector-ui', '');
+  banner.textContent = 'Flipp Injector: click where the experience should go. Esc to cancel.';
+  banner.style.cssText = 'position:fixed;top:12px;left:50%;transform:translateX(-50%);z-index:2147483647;padding:8px 16px;border-radius:999px;background:#0e86b8;color:#fff;font:600 13px/1.4 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;box-shadow:0 4px 16px rgba(0,0,0,.25);pointer-events:none;';
+  document.documentElement.appendChild(banner);
+
+  let hovered = null;
+  let saved = ['', ''];
+  const isOurs = (node) => node.closest && node.closest('[data-flipp-injector-ui], .flipp-element');
+  const unhover = () => {
+    if (!hovered) return;
+    hovered.style.outline = saved[0];
+    hovered.style.outlineOffset = saved[1];
+    hovered = null;
+  };
+  const over = (e) => {
+    if (isOurs(e.target)) return;
+    unhover();
+    hovered = e.target;
+    saved = [hovered.style.outline, hovered.style.outlineOffset];
+    hovered.style.outline = '2px solid #43c4f4';
+    hovered.style.outlineOffset = '2px';
+  };
+  // Keep the page from reacting to clicks while selecting
+  const block = (e) => {
+    if (isOurs(e.target)) return;
+    e.preventDefault();
+    e.stopImmediatePropagation();
+  };
+  const click = (e) => {
+    if (isOurs(e.target)) return;
+    block(e);
+    const target = e.target;
+    stop();
+    // Only one pending spot at a time
+    document.querySelectorAll('.flipp-element[data-flipp-injector="pending"]').forEach((n) => n.remove());
+    state.seq += 1;
+    const id = `${Date.now().toString(36)}${state.seq}`;
+    const html = `<div class="flipp-injector-container flipp-element" data-flipp-injector="pending" id="flipp-container-${id}" style="position:relative;display:block;width:100%;height:auto;clear:both;float:none;margin:16px 0;padding:0;box-sizing:border-box;">
+<div id="flipp-scroll-ad-content-${id}">
+<div style="box-sizing:border-box;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;min-height:120px;padding:16px;border:2px dashed #43c4f4;border-radius:12px;background-color:#f0faff;background-image:repeating-linear-gradient(135deg,rgba(67,196,244,.06) 0 14px,rgba(67,196,244,.14) 14px 28px);color:#0e86b8;font:600 16px/1.35 -apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;text-align:center;letter-spacing:normal;text-transform:none;">
+<span style="display:inline-block;padding:2px 10px;border-radius:999px;background:#43c4f4;color:#fff;font-size:11px;font-weight:700;letter-spacing:.08em;">FLIPP</span>
+<span>The Flipp experience will render here</span>
+<span style="font-weight:400;font-size:12px;color:#5f6f7b;">Open the injector and press Inject</span>
+</div>
+</div>
+</div>`;
+    if (target === document.body || target === document.documentElement) {
+      document.body.insertAdjacentHTML('beforeend', html);
+    } else {
+      target.insertAdjacentHTML('afterend', html);
+    }
+  };
+  const key = (e) => {
+    if (e.key === 'Escape') stop();
+  };
+  const blocked = ['pointerdown', 'mousedown', 'pointerup', 'mouseup'];
+  function stop() {
+    unhover();
+    banner.remove();
+    window.removeEventListener('mouseover', over, true);
+    window.removeEventListener('click', click, true);
+    window.removeEventListener('keydown', key, true);
+    blocked.forEach((type) => window.removeEventListener(type, block, true));
+    state.stopSelecting = null;
+  }
+  window.addEventListener('mouseover', over, true);
+  window.addEventListener('click', click, true);
+  window.addEventListener('keydown', key, true);
+  blocked.forEach((type) => window.addEventListener(type, block, true));
+  state.stopSelecting = stop;
+  return true;
+}
+
+function getInjectorState() {
+  return {
+    selecting: !!(window.__flippInjector && window.__flippInjector.stopSelecting),
+    pending: !!document.querySelector('.flipp-element[data-flipp-injector="pending"]'),
+    injected: document.querySelectorAll('.flipp-element[data-flipp-injector="injected"]').length,
+  };
+}
+
+function clearFlippExperience() {
+  if (window.__flippInjector && window.__flippInjector.stopSelecting) {
+    window.__flippInjector.stopSelecting();
+  }
+  document.querySelectorAll('.flipp-element').forEach((n) => n.remove());
 }
 
 async function addFlippExperience(siteId, zoneIds, loaderOptions, tagUrl) {
-  const flippElementCount = document.getElementsByClassName('flipp-element').length;
-  const placeholder = document.getElementById(`flipp-scroll-ad-content-${flippElementCount}`);
-  if (!placeholder) return false;
-  placeholder.innerHTML = "";
+  const container = document.querySelector('.flipp-element[data-flipp-injector="pending"]');
+  if (!container) return false;
+  const slot = container.firstElementChild;
+  slot.innerHTML = "";
+  container.setAttribute('data-flipp-injector', 'injected');
 
   window.flippxp = window.flippxp || { run: [] };
   window.flippxp.run.push(function () {
     window.flippxp.registerSlot(
-      `#flipp-scroll-ad-content-${flippElementCount}`,
+      `#${slot.id}`,
       'wishabi-test-publisher',
       siteId,
       [zoneIds],
@@ -61,17 +152,13 @@ async function addFlippExperience(siteId, zoneIds, loaderOptions, tagUrl) {
   return true;
 }
 
-function hasPlaceholder() {
-  const count = document.getElementsByClassName('flipp-element').length;
-  return !!document.getElementById(`flipp-scroll-ad-content-${count}`);
-}
-
 // Mirrors shopper-ad-web bidding.ts wonAuction
 function renderBiddingCreative(creative, height) {
-  const count = document.getElementsByClassName('flipp-element').length;
-  const placeholder = document.getElementById(`flipp-scroll-ad-content-${count}`);
-  if (!placeholder) return false;
-  placeholder.innerHTML = "";
+  const container = document.querySelector('.flipp-element[data-flipp-injector="pending"]');
+  if (!container) return false;
+  const slot = container.firstElementChild;
+  slot.innerHTML = "";
+  container.setAttribute('data-flipp-injector', 'injected');
 
   const iframe = document.createElement('iframe');
   iframe.className = 'flippxp-frame-container';
@@ -79,30 +166,13 @@ function renderBiddingCreative(creative, height) {
   iframe.style.display = 'block';
   iframe.style.width = '100%';
   iframe.style.height = `${height}px`;
-  placeholder.appendChild(iframe);
+  slot.appendChild(iframe);
 
   const doc = iframe.contentDocument;
   doc.open();
   doc.write(creative);
   doc.close();
   return true;
-}
-
-function selectInjection(evt) {
-  const flippElementCount = document.getElementsByClassName('flipp-element').length;
-  var html = `<div class="flipp-injector-container flipp-element" id="flipp-container-${flippElementCount+1}" style="position:relative; display:block; width:100%; height:auto; clear:both; float:none; margin:0;">
-<div id="flipp-scroll-ad-content-${flippElementCount+1}">
-  <div style="font-size: 20px; background-color: green; height: 100px;">
-    WILL BE INJECTED HERE!
-  </div>
-</div>
-</div>`
-
-  document.body.addEventListener("click", async function (e) {
-    e.stopPropagation();
-    e.preventDefault();
-    e.target.insertAdjacentHTML("afterEnd", html);
-  }, { once: true });
 }
 
 // ---- Popup helpers
@@ -153,6 +223,10 @@ function parseZoneIds() {
   return ids;
 }
 
+function isEmptyObject(value) {
+  return !value || typeof value !== "object" || Object.keys(value).length === 0;
+}
+
 function getJsonOptions() {
   const raw = editor.getSession().getValue().trim();
   if (!raw) return {};
@@ -166,14 +240,12 @@ function getJsonOptions() {
   }
 }
 
-function isEmptyObject(value) {
-  return !value || typeof value !== "object" || Object.keys(value).length === 0;
-}
-
 // Toggles, then content code (tag mode), then the JSON editor on top.
+// The newer toggles are only sent when on, so they never override campaign settings.
 function buildLoaderOptions(mode) {
   const options = {};
-  CHECKBOX_IDS.forEach((id) => { options[id] = byId(id).checked; });
+  CORE_TOGGLE_IDS.forEach((id) => { options[id] = byId(id).checked; });
+  EXTRA_TOGGLE_IDS.forEach((id) => { if (byId(id).checked) options[id] = true; });
   const contentCode = getContentCode();
   if (mode === "tag" && contentCode) options.flippContentCode = contentCode;
   return { ...options, ...getJsonOptions() };
@@ -202,8 +274,13 @@ function stagingHeaders() {
 async function getUserKey() {
   const stored = await chrome.storage.local.get(USER_KEY_STORAGE_KEY);
   if (stored[USER_KEY_STORAGE_KEY]) return stored[USER_KEY_STORAGE_KEY];
+  return resetUserKey();
+}
+
+async function resetUserKey() {
   const key = crypto.randomUUID();
   await chrome.storage.local.set({ [USER_KEY_STORAGE_KEY]: key });
+  byId("userKey").textContent = key;
   return key;
 }
 
@@ -259,23 +336,32 @@ function creativeHeight(decision, options) {
     : customData.standardHeight ?? STANDARD_DEFAULT_HEIGHT;
 }
 
+function decisionSource(decision) {
+  return decision.demand?.dspName ? "AdMixer" : "Kevel";
+}
+
 // ---- Actions
 
 async function injectTag(envKey) {
   const env = ENVIRONMENTS[envKey];
   const options = buildLoaderOptions("tag");
+  log("tag", `Loading flipptag (${env.label})`, { tagUrl: env.tagUrl, siteId: getSiteId(), zoneIds: getZoneIds(), loaderOptions: options });
   const ok = await runInPage(addFlippExperience, [getSiteId(), getZoneIds(), options, env.tagUrl]);
   if (!ok) {
+    log("error", NO_PLACEHOLDER);
     alertify.error(NO_PLACEHOLDER);
     return;
   }
+  log("tag", "Slot registered. flipptag will call /campaigns from the page.");
   showResult({ kind: "tag", env: envKey });
   celebrate();
 }
 
 async function injectBidding(envKey) {
   const env = ENVIRONMENTS[envKey];
-  if (!(await runInPage(hasPlaceholder))) {
+  const state = await runInPage(getInjectorState);
+  if (!state.pending) {
+    log("error", NO_PLACEHOLDER);
     alertify.error(NO_PLACEHOLDER);
     return;
   }
@@ -287,7 +373,12 @@ async function injectBidding(envKey) {
   const options = buildLoaderOptions("bidding");
   const body = await buildBiddingBody(env, tab.url, options);
 
+  const shownHeaders = { ...headers };
+  if (shownHeaders["X-LD-Authorization"]) shownHeaders["X-LD-Authorization"] = "Bearer (hidden)";
+  log("request", `POST /client_bidding (${env.label})`, { url: env.biddingUrl, headers: shownHeaders, body });
+
   showResult({ kind: "loading", env: envKey }, false);
+  const started = performance.now();
   let res;
   let text;
   try {
@@ -299,10 +390,13 @@ async function injectBidding(envKey) {
     });
     text = await res.text();
   } catch (e) {
+    log("error", `Request failed: ${e.message}`);
     showResult({ kind: "error", env: envKey, message: `Request failed: ${e.message}` });
     return;
   }
+  const took = `${Math.round(performance.now() - started)} ms`;
   if (!res.ok) {
+    log("error", `HTTP ${res.status} in ${took}`, text.slice(0, 2000));
     showResult({ kind: "error", env: envKey, status: res.status, message: text.slice(0, 500) });
     return;
   }
@@ -310,29 +404,112 @@ async function injectBidding(envKey) {
   try {
     json = JSON.parse(text);
   } catch (e) {
+    log("error", `HTTP ${res.status} in ${took}, but the response is not JSON`, text.slice(0, 2000));
     showResult({ kind: "error", env: envKey, status: res.status, message: "Response is not JSON." });
     return;
   }
 
   const decision = json.decisions?.inline?.[0];
   if (!decision) {
+    log("response", `HTTP ${res.status} in ${took}: no bid`, { location: json.location });
     showResult({ kind: "nobid", env: envKey, status: res.status, raw: json });
     return;
   }
+  log("response", `HTTP ${res.status} in ${took}: ${decisionSource(decision)} decision, campaign ${show(decision.campaignId)}, flight ${show(decision.flightId)}`, {
+    demand: decision.demand,
+    uapIds: decision.uapIds,
+    adId: decision.adId,
+    creativeId: decision.creativeId,
+    impressionUrl: decision.impressionUrl,
+    events: decision.events,
+    location: json.location,
+  });
   showResult({ kind: "bid", env: envKey, status: res.status, raw: json });
 
   const creative = decision.prebid?.creative;
   if (!creative) {
+    log("error", "The decision has no prebid.creative to render.");
     alertify.error("The decision has no prebid.creative to render.");
     return;
   }
-  const rendered = await runInPage(renderBiddingCreative, [creative, creativeHeight(decision, options)]);
+  const height = creativeHeight(decision, options);
+  const rendered = await runInPage(renderBiddingCreative, [creative, height]);
   if (rendered) {
+    log("info", `Creative rendered in a ${height}px iframe. Trackers fire from the page.`);
     celebrate();
   } else {
+    log("error", NO_PLACEHOLDER);
     alertify.error(NO_PLACEHOLDER);
   }
 }
+
+async function inject() {
+  if (!byId("flipp-injector-form").reportValidity()) return;
+  const button = byId("inject");
+  button.disabled = true;
+  try {
+    if (getMode() === "bidding") {
+      await injectBidding(getEnv());
+    } else {
+      await injectTag(getEnv());
+    }
+  } catch (e) {
+    log("error", e.message);
+    alertify.error(e.message);
+  } finally {
+    button.disabled = false;
+    refreshSteps();
+  }
+}
+
+async function select() {
+  try {
+    const started = await runInPage(toggleSelecting);
+    log("info", started ? "Select mode on. Click a spot on the page." : "Select mode cancelled.");
+  } catch (e) {
+    alertify.error(e.message);
+  }
+  refreshSteps();
+}
+
+async function clearAll() {
+  try {
+    await runInPage(clearFlippExperience);
+    log("info", "Cleared all injected slots.");
+  } catch (e) {
+    alertify.error(e.message);
+  }
+  clearResult();
+  refreshSteps();
+}
+
+// ---- Steps: highlight what to do next
+
+async function refreshSteps() {
+  let state = { selecting: false, pending: false, injected: 0 };
+  try {
+    state = await runInPage(getInjectorState);
+  } catch (e) {
+    // Pages like chrome:// can't be scripted
+  }
+  const selectBtn = byId("select");
+  const injectBtn = byId("inject");
+  selectBtn.classList.toggle("fx-step-primary", !state.pending);
+  selectBtn.classList.toggle("fx-step-selecting", state.selecting);
+  injectBtn.classList.toggle("fx-step-primary", state.pending && !state.selecting);
+  selectBtn.querySelector("strong").textContent = state.selecting ? "Selecting..." : "Select";
+  selectBtn.querySelector("small").textContent = state.selecting
+    ? "Click a spot on the page. Press to cancel"
+    : state.pending ? "Pick a different spot" : "Then click a spot on the page";
+  injectBtn.querySelector("small").textContent = state.pending
+    ? "Spot selected. Render it now"
+    : "Select a spot first";
+  // Keep checking while the page is in select mode
+  clearTimeout(refreshTimer);
+  if (state.selecting) refreshTimer = setTimeout(refreshSteps, 800);
+}
+
+let refreshTimer;
 
 // ---- Just for fun: flip the logo and burst flipping flyer cards from Inject
 
@@ -371,31 +548,6 @@ function celebrate() {
       ],
       { duration: 1200 + Math.random() * 600, easing: "cubic-bezier(.2,.7,.3,1)" }
     ).onfinish = () => card.remove();
-  }
-}
-
-async function inject() {
-  if (!byId("flipp-injector-form").reportValidity()) return;
-  const button = byId("inject");
-  button.disabled = true;
-  try {
-    if (getMode() === "bidding") {
-      await injectBidding(getEnv());
-    } else {
-      await injectTag(getEnv());
-    }
-  } catch (e) {
-    alertify.error(e.message);
-  } finally {
-    button.disabled = false;
-  }
-}
-
-async function runAction(func) {
-  try {
-    await runInPage(func);
-  } catch (e) {
-    alertify.error(e.message);
   }
 }
 
@@ -452,7 +604,7 @@ function renderResult(result) {
   if (result.kind === "tag") {
     badge = el("span", "fx-badge fx-badge-kevel", "Kevel tag");
     meta.push("flipptag");
-    message = "flipptag loaded on the page. It fetches the campaign from /campaigns itself.";
+    message = "flipptag loaded on the page. It fetches the campaign from /campaigns itself. Watch Activity for the call.";
   } else {
     meta.push("/client_bidding");
     if (result.status) meta.push(`HTTP ${result.status}`);
@@ -465,10 +617,8 @@ function renderResult(result) {
       badge = el("span", "fx-badge", "No bid");
       message = "decisions.inline is empty.";
     } else {
-      const decision = result.raw.decisions.inline[0];
-      badge = decision.demand?.dspName
-        ? el("span", "fx-badge fx-badge-admixer", "AdMixer")
-        : el("span", "fx-badge fx-badge-kevel", "Kevel");
+      const source = decisionSource(result.raw.decisions.inline[0]);
+      badge = el("span", `fx-badge fx-badge-${source.toLowerCase()}`, source);
     }
   }
 
@@ -504,12 +654,80 @@ function clearResult() {
   chrome.storage.session.remove(RESULT_STORAGE_KEY);
 }
 
+// ---- Activity log
+// Popup events live under LOG_STORAGE_KEY. background.js adds page network
+// events (FLS calls, flipptag, Kevel and AdMixer trackers) under NET_LOG_STORAGE_KEY.
+
+const LOG_STORAGE_KEY = "flippInjectorLog";
+const NET_LOG_STORAGE_KEY = "flippInjectorNetLog";
+const LOG_LIMIT = 300;
+const LOG_TAGS = {
+  info: "Popup",
+  tag: "Tag",
+  request: "Request",
+  response: "Response",
+  error: "Error",
+};
+let logWrites = Promise.resolve();
+
+function log(kind, text, detail) {
+  const entry = { t: Date.now(), kind, text };
+  if (detail !== undefined) {
+    entry.detail = typeof detail === "string" ? detail : JSON.stringify(detail, null, 2);
+  }
+  logWrites = logWrites.then(async () => {
+    const stored = await chrome.storage.session.get(LOG_STORAGE_KEY);
+    const entries = (stored[LOG_STORAGE_KEY] || []).concat(entry).slice(-LOG_LIMIT);
+    await chrome.storage.session.set({ [LOG_STORAGE_KEY]: entries });
+  });
+}
+
+function formatTime(t) {
+  return new Date(t).toLocaleTimeString([], { hour12: false });
+}
+
+async function renderLog() {
+  const stored = await chrome.storage.session.get([LOG_STORAGE_KEY, NET_LOG_STORAGE_KEY]);
+  const entries = [...(stored[LOG_STORAGE_KEY] || []), ...(stored[NET_LOG_STORAGE_KEY] || [])]
+    .sort((a, b) => b.t - a.t);
+  const list = byId("activityList");
+  list.replaceChildren();
+  byId("activityCount").textContent = entries.length ? String(entries.length) : "";
+  if (!entries.length) {
+    list.append(el("li", "fx-hint", "Nothing yet. Requests, responses and trackers show up here."));
+    return;
+  }
+  entries.forEach((entry) => {
+    const item = el("li", `fx-log-item fx-log-${entry.kind}`);
+    const row = el(entry.detail ? "summary" : "div", "fx-log-row");
+    row.append(
+      el("span", "fx-log-time", formatTime(entry.t)),
+      el("span", "fx-log-tag", entry.label || LOG_TAGS[entry.kind] || entry.kind),
+      el("span", "fx-log-text", entry.text),
+    );
+    if (entry.detail) {
+      const details = el("details");
+      details.append(row, el("pre", null, entry.detail));
+      item.append(details);
+    } else {
+      item.append(row);
+    }
+    list.append(item);
+  });
+}
+
+async function clearLog() {
+  await logWrites;
+  await chrome.storage.session.remove([LOG_STORAGE_KEY, NET_LOG_STORAGE_KEY]);
+}
+
 // ---- Mode and environment UI
 
 function updateModeUI() {
   const mode = getMode();
   byId("modeHint").textContent = MODE_HINTS[mode];
   byId("stagingOverrides").hidden = !(getEnv() === "staging" && mode === "bidding");
+  byId("userKeyRow").hidden = mode !== "bidding";
 }
 
 function updateJsonActive() {
@@ -531,7 +749,9 @@ const USER_KEY_STORAGE_KEY = "flippInjectorUserKey";
 const TOKEN_STORAGE_KEY = "flippInjectorLdToken";
 const RESULT_STORAGE_KEY = "flippInjectorLastResult";
 const TEXT_INPUT_IDS = ["flippExtenstionSiteId", "flippExtenstionZoneIds", "contentCode", "ldFlags"];
-const CHECKBOX_IDS = ["nestedIframe", "expandOnReadmore", "dwellExpandable", "preview", "startCompact", "isGoogleAmp"];
+const CORE_TOGGLE_IDS = ["nestedIframe", "expandOnReadmore", "dwellExpandable", "preview", "startCompact", "isGoogleAmp"];
+const EXTRA_TOGGLE_IDS = ["disableLazyLoading", "fixedHeightUnit", "mobileSwipe"];
+const CHECKBOX_IDS = [...CORE_TOGGLE_IDS, ...EXTRA_TOGGLE_IDS];
 const RADIO_NAMES = ["env", "mode"];
 
 function saveFormState() {
@@ -545,7 +765,7 @@ function saveFormState() {
 }
 
 async function restoreFormState() {
-  const local = await chrome.storage.local.get(FORM_STORAGE_KEY);
+  const local = await chrome.storage.local.get([FORM_STORAGE_KEY, USER_KEY_STORAGE_KEY]);
   const state = local[FORM_STORAGE_KEY];
   if (state) {
     TEXT_INPUT_IDS.forEach((id) => {
@@ -560,6 +780,7 @@ async function restoreFormState() {
     });
     if (state.editor !== undefined) editor.setValue(state.editor, -1);
   }
+  byId("userKey").textContent = local[USER_KEY_STORAGE_KEY] || "created on first request";
 
   const session = await chrome.storage.session.get([TOKEN_STORAGE_KEY, RESULT_STORAGE_KEY]);
   if (session[TOKEN_STORAGE_KEY]) byId("ldToken").value = session[TOKEN_STORAGE_KEY];
@@ -588,11 +809,17 @@ function wireForm() {
   byId("advanced").addEventListener("toggle", () => editor.resize());
 
   byId("fxLogo").addEventListener("click", flipLogo);
-  byId("select").addEventListener("click", () => runAction(selectInjection));
+  byId("select").addEventListener("click", select);
   byId("inject").addEventListener("click", inject);
-  byId("clear").addEventListener("click", async () => {
-    await runAction(clearFlippExperience);
-    clearResult();
+  byId("clear").addEventListener("click", clearAll);
+  byId("resetUserKey").addEventListener("click", async () => {
+    await resetUserKey();
+    log("info", "New bidding user key.");
+    alertify.success("New user key");
+  });
+  byId("clearLog").addEventListener("click", clearLog);
+  chrome.storage.onChanged.addListener((changes, area) => {
+    if (area === "session" && (changes[LOG_STORAGE_KEY] || changes[NET_LOG_STORAGE_KEY])) renderLog();
   });
   byId("flipp-injector-form").addEventListener("submit", (e) => e.preventDefault());
 }
@@ -603,4 +830,6 @@ document.body.onload = function () {
   byId("flippInjectorVersion").textContent = `v${chrome.runtime.getManifest().version}`;
   wireForm();
   restoreFormState();
+  refreshSteps();
+  renderLog();
 };

@@ -68,6 +68,9 @@
           <div class="form-check form-switch"><input class="form-check-input" type="checkbox" id="preview"><label class="form-check-label" for="preview">Preview</label></div>
           <div class="form-check form-switch"><input class="form-check-input" type="checkbox" id="startCompact"><label class="form-check-label" for="startCompact">Start Compact</label></div>
           <div class="form-check form-switch"><input class="form-check-input" type="checkbox" id="isGoogleAmp"><label class="form-check-label" for="isGoogleAmp">Google Amp</label></div>
+          <div class="form-check form-switch" title="Render right away instead of waiting to scroll into view"><input class="form-check-input" type="checkbox" id="disableLazyLoading"><label class="form-check-label" for="disableLazyLoading">Disable Lazy Load</label></div>
+          <div class="form-check form-switch"><input class="form-check-input" type="checkbox" id="fixedHeightUnit"><label class="form-check-label" for="fixedHeightUnit">Fixed Height Unit</label></div>
+          <div class="form-check form-switch"><input class="form-check-input" type="checkbox" id="mobileSwipe"><label class="form-check-label" for="mobileSwipe">Mobile Swipe</label></div>
         </div>
       </section>
 
@@ -90,16 +93,20 @@
         <summary>Advanced: loader options JSON <span id="jsonActive" class="fx-pill" hidden>active</span></summary>
         <p class="fx-hint">Merged over the toggles above.</p>
         <div id="editor">{}</div>
+        <div class="fx-user-key" id="userKeyRow" hidden>
+          <span class="fx-hint">Bidding user key: <code id="userKey"></code></span>
+          <button type="button" class="btn btn-link btn-sm p-0" id="resetUserKey" title="Kevel frequency caps are per user key">New key</button>
+        </div>
       </details>
 
       <div class="fx-steps">
-        <button type="button" id="select" class="fx-step">
+        <button type="button" id="select" class="fx-step fx-step-primary">
           <span class="fx-step-num">1</span>
           <span><strong>Select</strong><small>Then click a spot on the page</small></span>
         </button>
-        <button type="button" id="inject" class="fx-step fx-step-primary">
+        <button type="button" id="inject" class="fx-step">
           <span class="fx-step-num">2</span>
-          <span><strong>Inject</strong><small>Render into the last selected spot</small></span>
+          <span><strong>Inject</strong><small>Select a spot first</small></span>
         </button>
         <button type="button" id="clear" class="fx-step">
           <span class="fx-step-num">3</span>
@@ -108,6 +115,14 @@
       </div>
 
       <section class="fx-card fx-result" id="result" aria-live="polite"></section>
+
+      <section class="fx-card fx-activity">
+        <div class="fx-activity-head">
+          <h2 class="fx-label mb-0">Activity <span id="activityCount" class="fx-pill"></span></h2>
+          <button type="button" class="btn btn-link btn-sm p-0" id="clearLog">Clear</button>
+        </div>
+        <ol class="fx-log" id="activityList"></ol>
+      </section>
     </form>
 
     <script src="js/alertify.min.js"></script>

@@ -12,8 +12,10 @@ A Chrome extension (Manifest V3) for **demoing a Flipp experience directly on a 
   - **Bidding (`/client_bidding`)**: the popup calls FLS `/client_bidding` and renders the returned creative in an iframe, the same way Prebid does. This is the path that can serve **AdMixer** as well as Kevel.
 - **Result panel**: source badge (Kevel or AdMixer), campaign / flight / ad / creative ids, UAP ids when present, "No bid", HTTP errors, and the raw response.
 - Campaign fields: **Site ID**, **Zone IDs**, **Content code**.
-- Loader toggles plus a collapsible **Advanced** JSON editor merged over them.
+- **Activity log**: popup requests and responses, plus page requests seen by the background worker: FLS calls, flipptag loads, Kevel and AdMixer impression / viewability / click trackers, and Flipp beacons. Click a row for details.
+- Loader toggles (including Disable Lazy Load, Fixed Height Unit, Mobile Swipe) plus a collapsible **Advanced** JSON editor merged over them.
 - **Staging header overrides** (bidding mode only): `X-LD-Flags` and `X-LD-Authorization`. Never sent to production.
+- **New user key** (bidding mode, under Advanced) to get past Kevel frequency caps.
 - Inject **multiple experiences** on one page, and **Clear all** in one click.
 - Form state persists across popup opens. The LD token is kept for the browser session only.
 
@@ -28,9 +30,11 @@ A Chrome extension (Manifest V3) for **demoing a Flipp experience directly on a 
 
 1. Open the popup, pick the environment and mode.
 2. Fill in Site ID, Zone IDs and (optionally) a content code.
-3. **Select**, then click the spot on the page. A green "WILL BE INJECTED HERE!" placeholder appears.
-4. Reopen the popup and **Inject**. The result panel shows what came back.
+3. **Select**. The page shows a banner and outlines elements as you hover. Click one and the placeholder goes right below it. Press Select again or Esc to cancel.
+4. Reopen the popup and **Inject**. The highlighted step always shows what to do next. The result panel and Activity log show what happened.
 5. **Clear all** removes every injected experience.
+
+Tip: experiences lazy-load until scrolled into view. Turn on **Disable Lazy Load** to render right away.
 
 ### Testing AdMixer
 
@@ -58,7 +62,8 @@ The injected wrapper uses a namespaced class (`flipp-injector-container`) plus d
 |------|---------|
 | `manifest.json` | MV3 manifest (permissions, CSP, version). |
 | `popup.html` / `popup.css` | Popup UI. |
-| `popup.js` | Popup logic: modes, environments, select / inject / clear, result panel, persistence. |
+| `popup.js` | Popup logic: modes, environments, select / inject / clear, result panel, activity log, persistence. |
+| `background.js` | Service worker that logs page requests (FLS, flipptag, trackers) via `webRequest` for the Activity panel. |
 | `images/` | Flipp logo and extension icons. |
 | `js/flipptag.js` | Local copy of the Flipp loader tag (the live tag is fetched at runtime). |
 | `js/ace.js`, `js/mode-*`, `js/theme-*`, ... | [Ace editor](https://ace.c9.io/) for the JSON box. |

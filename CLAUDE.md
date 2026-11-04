@@ -15,7 +15,9 @@ The popup ([popup.html](popup.html)) has two switches up front:
   - **Kevel tag (`/campaigns`)**: `addFlippExperience` registers a slot with `window.flippxp.registerSlot('#flipp-scroll-ad-content-N', 'wishabi-test-publisher', siteId, [zoneIds], loaderOptions)`, then fetches and evals flipptag, which calls FLS `/campaigns` (Kevel only by design). Content code goes in as the `flippContentCode` loader option.
   - **Bidding (`/client_bidding`)**: the popup itself POSTs to FLS `/client_bidding` with the body shape from shopper-ad-web `bidding.ts` `requestBidding` (`credentials: 'omit'`, `Content-Type: text/plain`). Popup requests skip CORS, so custom headers work. `renderBiddingCreative` writes `decisions.inline[0].prebid.creative` (a full HTML doc that loads flipptag with the decision embedded) into an iframe in the placeholder, like `bidding.ts` `wonAuction`. This is the only mode that can return **AdMixer**.
 
-Flow: **Select** inserts a placeholder `<div class="flipp-element" id="flipp-container-N">` after the next clicked element. **Inject** renders into the latest one (numbered by the count of `.flipp-element` nodes, so multiple experiences work). **Clear all** removes them.
+Flow: **Select** runs `toggleSelecting` (one select session per page, kept on `window.__flippInjector`; pressing again or Esc cancels). The clicked element gets a placeholder `<div class="flipp-element" data-flipp-injector="pending">` with a unique id right after it, replacing any older pending one. **Inject** renders into the pending placeholder and marks it `injected`, so multiple experiences work. **Clear all** removes them. The popup reads `getInjectorState` to highlight the next step.
+
+Activity log: popup events go to `chrome.storage.session` `flippInjectorLog`. [background.js](background.js) watches page requests with `webRequest` (FLS routes, flipptag, `adzerk.net` and `inv-nets.admixer.net` trackers, Flipp beacons) and writes `flippInjectorNetLog`. The popup merges both live.
 
 Result panel: badge "AdMixer" when `decision.demand.dspName` is set, else "Kevel"; ids, `uapIds`, "No bid", HTTP errors, raw response.
 
@@ -25,9 +27,10 @@ Persistence: form state in `chrome.storage.local`; the LD token and last result 
 
 ## Key files (everything else is vendored)
 
-- [manifest.json](manifest.json): MV3 manifest. Permissions `storage`, `declarativeContent`, `activeTab`, `scripting`, host `<all_urls>`. The popup header badge reads its `version`.
+- [manifest.json](manifest.json): MV3 manifest. Permissions `storage`, `declarativeContent`, `activeTab`, `scripting`, `webRequest`, host `<all_urls>`. The popup header badge reads its `version`.
 - [popup.html](popup.html), [popup.css](popup.css): Bootstrap 5 UI, Flipp blue `#43c4f4`.
-- [popup.js](popup.js): all logic.
+- [popup.js](popup.js): popup logic.
+- [background.js](background.js): request logger for the Activity panel.
 - `images/`: Flipp logo (`flipp-logo-white.svg`) and extension icons (`icon-*.png`).
 
 ### Vendored / third-party (do not hand-edit)
@@ -45,5 +48,5 @@ Persistence: form state in `chrome.storage.local`; the LD token and last result 
 ## Working on this
 
 - No build step, package manager, or test suite. Load unpacked from `chrome://extensions` and hit reload after edits.
-- Injected functions (`addFlippExperience`, `renderBiddingCreative`, `hasPlaceholder`, `selectInjection`, `clearFlippExperience`) are serialized and run in the page's MAIN world. They can't reference popup-scope variables; pass everything through `args`.
+- Injected functions (`toggleSelecting`, `getInjectorState`, `addFlippExperience`, `renderBiddingCreative`, `clearFlippExperience`) are serialized and run in the page's MAIN world. They can't reference popup-scope variables; pass everything through `args`.
 - Git remote: `git@github.com:hasan-kanjee/flipp-experience-injector.git` (branch `master`).

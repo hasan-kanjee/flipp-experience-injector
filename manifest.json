@@ -3,8 +3,11 @@
   "name": "Flipp Experience Injector",
   "version": "2.0",
   "description": "Inject a Flipp experience onto a webpage under provided selector",
-  "permissions": ["storage", "declarativeContent", "activeTab", "scripting"],
+  "permissions": ["storage", "declarativeContent", "activeTab", "scripting", "webRequest"],
   "host_permissions": ["<all_urls>"],
+  "background": {
+    "service_worker": "background.js"
+  },
   "web_accessible_resources": [
     {
       "resources": ["css/*", "js/*", "popup.js"],
