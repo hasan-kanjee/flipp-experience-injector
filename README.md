@@ -1,66 +1,67 @@
 # Flipp Experience Injector
 
-A Chrome extension (Manifest V3) for **demoing a Flipp experience directly on a publisher's live website**. It lets you drop a test Flipp ad slot anywhere on a page, point it at a campaign, and render that campaign in place — so you can preview how a Flipp experience looks and behaves on the real publisher page without any site-side integration.
-
-It loads the Flipp loader tag (`flipptag.js`), which requests campaign data from **flyer-locator-service** and renders the returned experience into a placeholder element you choose on the page.
+A Chrome extension (Manifest V3) for **demoing a Flipp experience directly on a publisher's live website**. Drop a test Flipp ad slot anywhere on a page, point it at a campaign, and render it in place, with no site-side integration.
 
 > This is a demo / QA tool, not a production publisher integration.
 
 ## Features
 
-- Inject a Flipp experience into any page by clicking where you want it.
-- Configure **Site ID** and **Zone IDs**.
-- Toggle common loader options: Nested Iframe, Expand on Readmore, Dwell Expandable, Preview, Start Compact, Google Amp.
-- Provide arbitrary **Loader Options** as JSON (merged over the toggle values) via a built-in editor.
-- Inject **multiple experiences** on the same page at once.
-- **Clear ALL** injected experiences in one click.
-- Form state (Site ID, Zone IDs, toggles, JSON options) **persists** across closing and reopening the popup.
-- A version badge in the popup header shows which build is loaded.
+- **Environment**: Production or Staging.
+- **Mode**:
+  - **Kevel tag (`/campaigns`)**: loads flipptag on the page, which calls FLS `/campaigns` (Kevel only).
+  - **Bidding (`/client_bidding`)**: the popup calls FLS `/client_bidding` and renders the returned creative in an iframe, the same way Prebid does. This is the path that can serve **AdMixer** as well as Kevel.
+- **Result panel**: source badge (Kevel or AdMixer), campaign / flight / ad / creative ids, UAP ids when present, "No bid", HTTP errors, and the raw response.
+- Campaign fields: **Site ID**, **Zone IDs**, **Content code**.
+- Loader toggles plus a collapsible **Advanced** JSON editor merged over them.
+- **Staging header overrides** (bidding mode only): `X-LD-Flags` and `X-LD-Authorization`. Never sent to production.
+- Inject **multiple experiences** on one page, and **Clear all** in one click.
+- Form state persists across popup opens. The LD token is kept for the browser session only.
 
 ## Install (unpacked)
 
 1. Open `chrome://extensions/` in Chrome.
-2. Enable **Developer mode** (top right).
+2. Enable **Developer mode**.
 3. Click **Load unpacked** and select this folder.
-4. After editing source, click the **reload ↻** icon on the extension card to pick up changes.
-   - The popup files (`popup.html` / `popup.js` / `popup.css`) are re-read each time the popup opens, so most edits show up on the next open. A `manifest.json` change (e.g. the version) requires a reload.
+4. After editing source, click the reload icon on the extension card. Popup files are re-read on each open; `manifest.json` changes need a reload.
 
 ## Usage
 
-1. Click the extension icon to open the popup.
-2. Enter a **Site ID** and **Zone IDs**, and set any loader toggles / JSON options.
-3. Click **Select**, then close the popup and click the spot on the page where the experience should be inserted. A green "WILL BE INJECTED HERE!" placeholder appears.
-4. Reopen the popup and click **Inject**. The Flipp tag loads and renders the campaign into the placeholder.
-5. Use **Clear ALL** to remove all injected experiences from the page.
+1. Open the popup, pick the environment and mode.
+2. Fill in Site ID, Zone IDs and (optionally) a content code.
+3. **Select**, then click the spot on the page. A green "WILL BE INJECTED HERE!" placeholder appears.
+4. Reopen the popup and **Inject**. The result panel shows what came back.
+5. **Clear all** removes every injected experience.
+
+### Testing AdMixer
+
+FLS only calls AdMixer on prebid-family routes, so use **Bidding** mode. Whether a request gets AdMixer is decided by LaunchDarkly (`fls-admixer-enabled`, `fls-admixer-mode`), targeted by your public IP. On staging you can also force flags with the header overrides.
+
+Staging sample that serves a Kevel flight: site `1192075`, zone `260678`, content code `e2e-staging-sfml-native`.
 
 ## How it works
 
-- All page interaction runs via `chrome.scripting.executeScript` with `world: 'MAIN'`, so the injected functions execute in the page's own JS context (required to reach `window.flippxp`).
-- **Inject** sets up `window.flippxp.run`, calls `window.flippxp.registerSlot('#flipp-scroll-ad-content-N', 'wishabi-test-publisher', siteId, [zoneIds], loaderOptions)`, then fetches and evaluates `https://cdn-gateflipp.flippback.com/tag/js/flipptag.js`.
-- Each injected slot is numbered, allowing multiple experiences on one page.
-- Because the injected functions are serialized and run in the page's MAIN world, they can't reference popup-scope variables — everything they need is passed through `args`.
+- Page interaction runs via `chrome.scripting.executeScript` with `world: 'MAIN'`. Injected functions are serialized, so everything they need comes through `args`.
+- **Kevel tag mode** registers a slot with `window.flippxp.registerSlot(...)` and evaluates flipptag. The content code is passed as the `flippContentCode` loader option.
+- **Bidding mode** POSTs the same body shape as shopper-ad-web `bidding.ts` from the popup (no CORS limits, custom headers allowed), then writes `decisions.inline[0].prebid.creative` into an iframe in the placeholder. That HTML loads flipptag with the decision embedded, so trackers fire from the page.
 
-### Avoiding CSS collisions
+| | Production | Staging |
+|---|---|---|
+| flipptag | `cdn-gateflipp.flippback.com/tag/js/flipptag.js` | `cdn-gateflipp-stg.flippback.com/tag/js/flipptag.js` |
+| client_bidding | `ads-flipp.com/flyer-locator-service/client_bidding` | `cdn-gateflipp.flippback.com/flyer-locator-service-stg/client_bidding` |
+| Kevel network | 10922 | 11090 |
 
-The injected wrapper uses a namespaced class (`flipp-injector-container`) plus defensive inline styles so the publisher's stylesheet can't hijack the container's sizing. (An earlier generic `iframe-container` class collided with sites that define their own `.iframe-container` rules, causing the experience to overlap page content.)
+The injected wrapper uses a namespaced class (`flipp-injector-container`) plus defensive inline styles so publisher CSS can't hijack its sizing.
 
 ## Project structure
 
 | Path | Purpose |
 |------|---------|
 | `manifest.json` | MV3 manifest (permissions, CSP, version). |
-| `popup.html` | Popup UI. |
-| `popup.js` | Popup logic: select / inject / clear, slot registration, form persistence. |
-| `popup.css` | Popup styling. |
-| `images/` | Flipp logos and extension icon. |
-| `js/flipptag.js` | Local copy of the Flipp loader tag (the live tag is fetched from the CDN at runtime). |
-| `js/ace.js`, `js/mode-*`, `js/theme-*`, `js/ext-*`, `js/snippets/*` | [Ace editor](https://ace.c9.io/) — used for the Loader Options JSON box. |
-| `js/jquery-*`, `js/bootstrap.min.js`, `js/alertify.min.js`, `*.min.css` | Vendored UI libraries. |
+| `popup.html` / `popup.css` | Popup UI. |
+| `popup.js` | Popup logic: modes, environments, select / inject / clear, result panel, persistence. |
+| `images/` | Flipp logo and extension icons. |
+| `js/flipptag.js` | Local copy of the Flipp loader tag (the live tag is fetched at runtime). |
+| `js/ace.js`, `js/mode-*`, `js/theme-*`, ... | [Ace editor](https://ace.c9.io/) for the JSON box. |
+| `js/alertify.min.js`, `*.min.css` | Vendored UI libraries. |
 
-There is no build step, package manager, or test suite — it's plain HTML/CSS/JS loaded directly as an unpacked extension.
-
-## Key identifiers
-
-- Flipp tag CDN: `https://cdn-gateflipp.flippback.com/tag/js/flipptag.js`
-- Publisher name passed to `registerSlot`: `wishabi-test-publisher`
-- Campaign data is resolved server-side by **flyer-locator-service** (called by the Flipp tag).
+There is no build step, package manager, or test suite.
