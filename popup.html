@@ -2,99 +2,145 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <link rel="stylesheet" href="./popup.css" />
     <link rel="stylesheet" href="./bootstrap.min.css" />
     <link rel="stylesheet" href="./alertify.rtl.min.css">
     <link rel="stylesheet" href="./default.rtl.min.css">
-    <style type="text/css" media="screen">
-      #editor { 
-        height: 150px;
-      }
-  </style>
+    <link rel="stylesheet" href="./popup.css" />
   </head>
   <body>
-    <div class="container">
-      <div class="row">
-        <div class="container header">
-          <img src="images/flipp-logo-white.svg" alt="Flipp" width="58" height="58" class="map img-resonsive">experience
-          <span id="flippInjectorVersion" class="injector-version"></span>
-        </div>
+    <header class="fx-header">
+      <div class="fx-flyers" aria-hidden="true">
+        <span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span>
       </div>
-      <form class="row g-3 needs-validation" id="flipp-injector-form">
-      <div class="row second">
-        <div class="col-sm">
-          <label for="flippExtenstionSiteId" class="form-label">Site ID</label>
-          <input type="text" class="form-control" id="flippExtenstionSiteId" placeholder="Site ID" value="1243066" required>
+      <img id="fxLogo" class="fx-logo" src="images/flipp-logo-white.svg" alt="Flipp" width="40" height="40">
+      <span class="fx-title">Experience Injector</span>
+      <span id="flippInjectorVersion" class="injector-version"></span>
+    </header>
+
+    <form id="flipp-injector-form" class="fx-main">
+      <div class="fx-alert" id="adblockAlert" role="alert" hidden>
+        <span class="fx-alert-icon" aria-hidden="true">!</span>
+        <div>
+          <strong id="adblockTitle">An ad blocker is stopping the Flipp experience</strong>
+          <p id="adblockText"></p>
+          <ol>
+            <li>Turn off your ad blocker for this site. Click its icon in the browser toolbar (for example uBlock Origin, AdBlock, or Brave Shields).</li>
+            <li>Reload the page.</li>
+            <li>Press Select, then Inject again.</li>
+          </ol>
         </div>
-        <div class="col-sm">
-          <label for="flippExtenstionZoneIds" class="form-label">Zone IDs</label>
-          <input type="text" class="form-control" id="flippExtenstionZoneIds" placeholder="Zone IDs">
-        </div>
+        <button type="button" class="btn-close" id="adblockDismiss" aria-label="Dismiss"></button>
       </div>
-      <div class="row second">
-        <div class="col-sm">
-        <div class="form-check form-switch">
-          
-          <input class="form-check-input" type="checkbox" id="nestedIframe">
-          <label class="form-check-label" for="nestedIframe">Nested Iframe</label>
+
+      <div class="fx-switches">
+        <div>
+          <div class="fx-label">Environment</div>
+          <div class="btn-group fx-segmented" role="group" aria-label="Environment">
+            <input type="radio" class="btn-check" name="env" id="envProduction" value="production" checked>
+            <label class="btn" for="envProduction">Production</label>
+            <input type="radio" class="btn-check" name="env" id="envStaging" value="staging">
+            <label class="btn fx-staging" for="envStaging">Staging</label>
           </div>
         </div>
-        <div class="col-sm">
-          <div class="form-check form-switch">
-            
-            <input class="form-check-input" type="checkbox" id="expandOnReadmore">
-            <label class="form-check-label" for="expandOnReadmore">Expand on Readmore</label>
-            </div>
-          </div>
-          <div class="col-sm">
-            <div class="form-check form-switch">
-              
-              <input class="form-check-input" type="checkbox" id="dwellExpandable">
-              <label class="form-check-label" for="dwellExpandable">Dwell Expandable</label>
-              </div>
-            </div>
-      </div>
-      <div class="row second">
-        <div class="col-sm">
-        <div class="form-check form-switch">
-          
-          <input class="form-check-input" type="checkbox" id="preview">
-          <label class="form-check-label" for="preview">Preview</label>
+        <div>
+          <div class="fx-label">Mode</div>
+          <div class="btn-group fx-segmented" role="group" aria-label="Mode">
+            <input type="radio" class="btn-check" name="mode" id="modeTag" value="tag" checked>
+            <label class="btn" for="modeTag">Kevel tag <code>/campaigns</code></label>
+            <input type="radio" class="btn-check" name="mode" id="modeBidding" value="bidding">
+            <label class="btn" for="modeBidding">Bidding <code>/client_bidding</code></label>
           </div>
         </div>
-        <div class="col-sm">
-          <div class="form-check form-switch">
-            
-            <input class="form-check-input" type="checkbox" id="startCompact">
-            <label class="form-check-label" for="startCompact">Start Compact</label>
-            </div>
+      </div>
+      <p id="modeHint" class="fx-hint"></p>
+
+      <section class="fx-card">
+        <h2 class="fx-label">Campaign</h2>
+        <div class="row g-2">
+          <div class="col-4">
+            <label for="flippExtenstionSiteId" class="form-label">Site ID</label>
+            <input type="text" class="form-control form-control-sm" id="flippExtenstionSiteId" placeholder="Site ID" value="1243066" pattern="\d+" required>
           </div>
-          <div class="col-sm">
-            <div class="form-check form-switch">
-              
-              <input class="form-check-input" type="checkbox" id="isGoogleAmp">
-              <label class="form-check-label" for="dwellExpandable">Google Amp</label>
-              </div>
-            </div>
+          <div class="col-4">
+            <label for="flippExtenstionZoneIds" class="form-label">Zone IDs</label>
+            <input type="text" class="form-control form-control-sm" id="flippExtenstionZoneIds" placeholder="e.g. 260678">
+          </div>
+          <div class="col-4">
+            <label for="contentCode" class="form-label">Content code</label>
+            <input type="text" class="form-control form-control-sm" id="contentCode" maxlength="32" placeholder="Optional">
+          </div>
+        </div>
+      </section>
+
+      <section class="fx-card">
+        <h2 class="fx-label">Loader toggles</h2>
+        <div class="fx-toggles">
+          <div class="form-check form-switch"><input class="form-check-input" type="checkbox" id="nestedIframe"><label class="form-check-label" for="nestedIframe">Nested Iframe</label></div>
+          <div class="form-check form-switch"><input class="form-check-input" type="checkbox" id="expandOnReadmore"><label class="form-check-label" for="expandOnReadmore">Expand on Readmore</label></div>
+          <div class="form-check form-switch"><input class="form-check-input" type="checkbox" id="dwellExpandable"><label class="form-check-label" for="dwellExpandable">Dwell Expandable</label></div>
+          <div class="form-check form-switch"><input class="form-check-input" type="checkbox" id="preview"><label class="form-check-label" for="preview">Preview</label></div>
+          <div class="form-check form-switch"><input class="form-check-input" type="checkbox" id="startCompact"><label class="form-check-label" for="startCompact">Start Compact</label></div>
+          <div class="form-check form-switch"><input class="form-check-input" type="checkbox" id="isGoogleAmp"><label class="form-check-label" for="isGoogleAmp">Google Amp</label></div>
+          <div class="form-check form-switch" title="Render right away instead of waiting to scroll into view"><input class="form-check-input" type="checkbox" id="disableLazyLoading"><label class="form-check-label" for="disableLazyLoading">Disable Lazy Load</label></div>
+          <div class="form-check form-switch"><input class="form-check-input" type="checkbox" id="fixedHeightUnit"><label class="form-check-label" for="fixedHeightUnit">Fixed Height Unit</label></div>
+          <div class="form-check form-switch"><input class="form-check-input" type="checkbox" id="mobileSwipe"><label class="form-check-label" for="mobileSwipe">Mobile Swipe</label></div>
+        </div>
+      </section>
+
+      <section class="fx-card fx-card-staging" id="stagingOverrides" hidden>
+        <h2 class="fx-label">Staging header overrides</h2>
+        <div class="row g-2">
+          <div class="col-7">
+            <label for="ldFlags" class="form-label">X-LD-Flags</label>
+            <input type="text" class="form-control form-control-sm font-monospace" id="ldFlags" spellcheck="false" placeholder='{"fls-admixer-enabled":true,"fls-admixer-mode":"live"}'>
+          </div>
+          <div class="col-5">
+            <label for="ldToken" class="form-label">X-LD-Authorization</label>
+            <input type="password" class="form-control form-control-sm" id="ldToken" autocomplete="off" placeholder="Bearer token">
+          </div>
+        </div>
+        <p class="fx-hint mb-0">Sent to staging only. Flags need a valid token. The token is kept for this browser session only.</p>
+      </section>
+
+      <details class="fx-card fx-advanced" id="advanced">
+        <summary>Advanced: loader options JSON <span id="jsonActive" class="fx-pill" hidden>active</span></summary>
+        <p class="fx-hint">Merged over the toggles above.</p>
+        <div id="editor">{}</div>
+        <div class="fx-user-key" id="userKeyRow" hidden>
+          <span class="fx-hint">Bidding user key: <code id="userKey"></code></span>
+          <button type="button" class="btn btn-link btn-sm p-0" id="resetUserKey" title="Kevel frequency caps are per user key">New key</button>
+        </div>
+      </details>
+
+      <div class="fx-steps">
+        <button type="button" id="select" class="fx-step fx-step-primary">
+          <span class="fx-step-num">1</span>
+          <span><strong>Select</strong><small>Then click a spot on the page</small></span>
+        </button>
+        <button type="button" id="inject" class="fx-step">
+          <span class="fx-step-num">2</span>
+          <span><strong>Inject</strong><small>Select a spot first</small></span>
+        </button>
+        <button type="button" id="clear" class="fx-step">
+          <span class="fx-step-num">3</span>
+          <span><strong>Clear all</strong><small>Remove every injected slot</small></span>
+        </button>
       </div>
-      <div class="row second">
-        <label class="form-check-label" for="editor">Loader Options</label>
-      <div id="editor">{}</div>
-    </div>
-      
-      <div class="row second">
-        <div class="col-sm"><button type="button" id="select" class="btn btn-primary">Select</button></div>
-        <div class="col-sm"><button type="submit" id="inject" class="btn btn-primary">Inject</button></div>
-        <div class="col-sm"><button type="button" id="clear" class="btn btn-secondary">Clear ALL</button></div>
-      </div>
-      </form>
-    </div>
+
+      <section class="fx-card fx-result" id="result" aria-live="polite"></section>
+
+      <section class="fx-card fx-activity">
+        <div class="fx-activity-head">
+          <h2 class="fx-label mb-0">Activity <span id="activityCount" class="fx-pill"></span></h2>
+          <button type="button" class="btn btn-link btn-sm p-0" id="clearLog">Clear</button>
+        </div>
+        <ol class="fx-log" id="activityList"></ol>
+      </section>
+    </form>
+
     <script src="js/alertify.min.js"></script>
     <script src="js/ace.js" type="text/javascript" charset="utf-8"></script>
     <script src="./popup.js" type="module"></script>
-    <script src="js/jquery-3.6.3.min.js"></script>
-    <script src="js/bootstrap.min.js"></script>
   </body>
 </html>
